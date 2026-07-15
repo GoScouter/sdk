@@ -14,9 +14,11 @@
 //	<binary> describe
 //	    Write a JSON [Descriptor] to stdout and exit 0.
 //
-//	<binary> scout -target <target>
+//	<binary> scout -target <target> [module flags...]
 //	    Run against target, write the rendered result to stdout, and exit 0.
-//	    On failure, write a message to stderr and exit with a non-zero status.
+//	    Any operator-supplied module flags are forwarded verbatim after
+//	    -target; the binary parses its own flags. On failure, write a message
+//	    to stderr and exit with a non-zero status.
 //
 // Any executable that honors this protocol is a valid module, regardless of the
 // language it is written in. The [Module] and [Result] interfaces describe the
@@ -46,7 +48,10 @@ type Module interface {
 
 	// Scout gathers information about target and returns a renderable result.
 	// target is the raw string supplied by the operator (typically a URL).
-	Scout(target string) (Result, error)
+	// args carries any module-specific flags the operator passed after the
+	// module name (e.g. []string{"--https"}); modules that take no options
+	// ignore it.
+	Scout(target string, args []string) (Result, error)
 }
 
 // Result is the outcome of a [Module.Scout] call. It knows how to present

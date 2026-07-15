@@ -3,21 +3,18 @@ package sdk
 // ProtocolVersion is the version of the host<->module wire protocol implemented
 // by this SDK. A module binary reports it in its [Descriptor] so the host can
 // refuse binaries built against an incompatible protocol.
-const ProtocolVersion = 1
+const ProtocolVersion = 3
 
-// Subcommands understood by a module binary. The host invokes the binary with
-// one of these as its first argument.
+// Wire method names carried in a [request].
 const (
-	// cmdDescribe makes the binary print its Descriptor as JSON and exit.
-	cmdDescribe = "describe"
-	// cmdScout makes the binary run its module against -target and print the
-	// rendered result.
-	cmdScout = "scout"
+	// methodDescribe asks the module for its [Descriptor].
+	methodDescribe = "describe"
+	// methodScout asks the module to run against a target.
+	methodScout = "scout"
 )
 
-// Descriptor is the metadata a module binary reports in response to the
-// "describe" command. It is the JSON contract a module binary writes and [Open]
-// reads.
+// Descriptor is the metadata a module reports in response to a describe request.
+// It is the JSON contract a module writes and [Open] reads during the handshake.
 type Descriptor struct {
 	// Protocol is the wire-protocol version the binary was built against.
 	Protocol int `json:"protocol"`
@@ -27,4 +24,24 @@ type Descriptor struct {
 	Description string `json:"description"`
 	// Version is the module's own version.
 	Version string `json:"version"`
+}
+
+// request is one host->module message. Exactly one is encoded per line on the
+// module's stdin. ID correlates the eventual [response]; the host may have many
+// requests in flight at once, so IDs let it match replies to callers.
+type request struct {
+	ID     uint64   `json:"id"`
+	Method string   `json:"method"`
+	Target string   `json:"target,omitempty"`
+	Args   []string `json:"args,omitempty"`
+}
+
+// response is one module->host message, encoded one per line on stdout. ID
+// echoes the request it answers. Exactly one of Descriptor, Result, or Error is
+// meaningful, depending on the request's method and outcome.
+type response struct {
+	ID         uint64      `json:"id"`
+	Descriptor *Descriptor `json:"descriptor,omitempty"`
+	Result     string      `json:"result,omitempty"`
+	Error      string      `json:"error,omitempty"`
 }
