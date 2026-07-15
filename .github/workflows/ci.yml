@@ -41,7 +41,7 @@ jobs:
             || (echo "::error::go.mod/go.sum are not tidy — run 'make tidy'" && exit 1)
 
       - name: go vet
-        run: make vet
+        run: go vet ./...
 
       - name: staticcheck
         uses: dominikh/staticcheck-action@v1
@@ -84,7 +84,7 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v7
-          
+
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
