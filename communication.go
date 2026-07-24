@@ -120,10 +120,10 @@ func (c *Client) AskModule(module Module, namespace ModuleNamespace) (string, er
         c.mu.Unlock()
     }()
 
-    askRequest, err := json.Marshal(AskRequest{
+    askRequest, err := json.Marshal(AskRequest(ModuleNamespace{
         Name: namespace.Name,
         Author: namespace.Author,
-    })
+    }))
     if err != nil {
         return "", err
     }
