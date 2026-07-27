@@ -96,6 +96,7 @@ func (c *Client) AskModule(namespace ModuleNamespace) (string, error) {
 		RequestID: c.nextID,
 	}
 
+	c.nextID += 1
 	c.pendingRequests[key] = responseChan
 	c.mu.Unlock()
 
