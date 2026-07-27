@@ -2,9 +2,11 @@ package sdk
 
 import (
 	"encoding/json"
+	"fmt"
 	"net"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -82,5 +84,57 @@ func (c *Client) listen() error {
 			ch <- resp.Data
 			close(ch)
 		}
+	}
+}
+
+func (c *Client) AskModule(namespace ModuleNamespace) (string, error) {
+	c.mu.Lock()
+
+	responseChan := make(chan []byte, 1)
+	key := RegistryKey{
+		ClientID:  c.id,
+		RequestID: c.nextID,
+	}
+
+	c.pendingRequests[key] = responseChan
+	c.mu.Unlock()
+
+	defer func() {
+		c.mu.Lock()
+		delete(c.pendingRequests, key)
+		c.mu.Unlock()
+	}()
+
+	askRequest, err := json.Marshal(askRequest(ModuleNamespace{
+		Name:   namespace.Name,
+		Author: namespace.Author,
+	}))
+	if err != nil {
+		return "", err
+	}
+
+	req, err := json.Marshal(request{
+		RequestID: key.RequestID,
+		ClientID:  key.ClientID,
+		Type:      methodAsk,
+		Data:      askRequest,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	c.mu.Lock()
+	_, err = c.conn.Write(req)
+	c.mu.Unlock()
+	if err != nil {
+		return "", err
+	}
+
+	select {
+	case rawData := <-responseChan:
+		return string(rawData), nil
+
+	case <-time.After(8 * time.Second):
+		return "", fmt.Errorf("request %d for client %s, timed out waiting for module response", key.RequestID, key.ClientID)
 	}
 }
