@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -46,6 +47,22 @@ func main() {
 }
 `
 
+func sdkGoVersion(t *testing.T, sdkDir string) string {
+	t.Helper()
+
+	data, err := os.ReadFile(filepath.Join(sdkDir, "go.mod"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for line := range strings.SplitSeq(string(data), "\n") {
+		if v, ok := strings.CutPrefix(strings.TrimSpace(line), "go "); ok {
+			return strings.TrimSpace(v)
+		}
+	}
+	t.Fatalf("no go directive in %s/go.mod", sdkDir)
+	return ""
+}
+
 func buildModule(t *testing.T) string {
 	t.Helper()
 
@@ -61,7 +78,7 @@ func buildModule(t *testing.T) string {
 		}
 	}
 	write("main.go", testModuleSrc)
-	write("go.mod", fmt.Sprintf("module testmod\n\ngo 1.26.5\n\nrequire sdk v0.0.0\n\nreplace sdk => %s\n", sdkDir))
+	write("go.mod", fmt.Sprintf("module testmod\n\ngo %s\n\nrequire sdk v0.0.0\n\nreplace sdk => %s\n", sdkGoVersion(t, sdkDir), sdkDir))
 
 	bin := filepath.Join(dir, "testmod")
 	cmd := exec.Command("go", "build", "-o", bin, ".")
