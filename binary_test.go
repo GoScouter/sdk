@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"sdk"
+	"github.com/GoScouter/sdk"
 )
 
 const testModuleSrc = `package main
