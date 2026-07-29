@@ -40,6 +40,10 @@ func (mod) Scout(target string, args []string) json.RawMessage {
 	return json.RawMessage(fmt.Sprintf("{%q:%q,%q:%d}", "target", target, "args", len(args)))
 }
 
+func (mod) Render(raw json.RawMessage) string {
+    return string(raw)
+}
+
 func main() {
 	if err := sdk.Serve(mod{}); err != nil {
 		log.Fatal(err)

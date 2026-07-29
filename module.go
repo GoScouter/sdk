@@ -5,6 +5,7 @@ import "encoding/json"
 type Module interface {
 	Info() ModuleInfo
 	Scout(target string, args []string) json.RawMessage
+	Render(raw json.RawMessage) string
 }
 
 type ModuleNamespace struct {

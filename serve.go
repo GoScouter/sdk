@@ -89,7 +89,7 @@ func handle(m Module, req *pipeRequest) (res *pipeResponse) {
 			return res
 		}
 		res.Result = raw
-
+		res.View = m.Render(raw)
 	default:
 		res.Error = "unknown method: " + req.Method
 	}

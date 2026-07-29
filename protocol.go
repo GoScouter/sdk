@@ -36,5 +36,6 @@ type pipeRequest struct {
 type pipeResponse struct {
 	ID     uint64          `json:"id"`
 	Result json.RawMessage `json:"result,omitempty"`
+	View   string          `json:"view"`
 	Error  string          `json:"error,omitempty"`
 }
