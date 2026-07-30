@@ -26,3 +26,7 @@ type ModuleInfo struct {
 	Description  string            `json:"description"`
 	Dependencies []ModuleNamespace `json:"dependencies"`
 }
+
+func (m *ModuleInfo) IsValid() bool {
+	return m.Name == "" || m.Author == "" || m.Description == ""
+}

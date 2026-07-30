@@ -78,6 +78,7 @@ func handle(m Module, req *pipeRequest) (res *pipeResponse) {
 			return res
 		}
 		res.Result = raw
+		res.View = ""
 
 	case methodScout:
 		raw, err := m.Scout(req.Target, req.Args)

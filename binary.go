@@ -81,7 +81,7 @@ func Open(path string) (*Binary, error) {
 func (b *Binary) Path() string { return b.path }
 
 func (b *Binary) Info(ctx context.Context) (ModuleInfo, error) {
-	raw, err := b.call(ctx, &pipeRequest{Method: methodInfo})
+	raw, _, err := b.call(ctx, &pipeRequest{Method: methodInfo})
 	if err != nil {
 		return ModuleInfo{}, err
 	}
@@ -95,7 +95,7 @@ func (b *Binary) Info(ctx context.Context) (ModuleInfo, error) {
 // Scout runs the module's Scout against target. It blocks until the module
 // answers, ctx is cancelled, or the module exits -- but it does not block other
 // Scout calls, so callers may fan out freely over one Binary.
-func (b *Binary) Scout(ctx context.Context, target string, args []string) (json.RawMessage, error) {
+func (b *Binary) Scout(ctx context.Context, target string, args []string) (json.RawMessage, string, error) {
 	return b.call(ctx, &pipeRequest{Method: methodScout, Target: target, Args: args})
 }
 
@@ -117,9 +117,9 @@ func (b *Binary) Close() error {
 	return nil
 }
 
-func (b *Binary) call(ctx context.Context, req *pipeRequest) (json.RawMessage, error) {
+func (b *Binary) call(ctx context.Context, req *pipeRequest) (json.RawMessage, string, error) {
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	ch := make(chan *pipeResponse, 1)
@@ -131,7 +131,7 @@ func (b *Binary) call(ctx context.Context, req *pipeRequest) (json.RawMessage, e
 		if err == nil {
 			err = ErrClosed
 		}
-		return nil, err
+		return nil, "", err
 	}
 	b.nextID++
 	req.ID = b.nextID
@@ -143,21 +143,21 @@ func (b *Binary) call(ctx context.Context, req *pipeRequest) (json.RawMessage, e
 	b.wmu.Unlock()
 	if err != nil {
 		b.forget(req.ID)
-		return nil, fmt.Errorf("sdk: send %s to %s: %w", req.Method, b.path, err)
+		return nil, "", fmt.Errorf("sdk: send %s to %s: %w", req.Method, b.path, err)
 	}
 
 	select {
 	case res, ok := <-ch:
 		if !ok {
-			return nil, b.failure()
+			return nil, "", b.failure()
 		}
 		if res.Error != "" {
-			return nil, fmt.Errorf("sdk: %s %s: %s", b.path, req.Method, res.Error)
+			return nil, "", fmt.Errorf("sdk: %s %s: %s", b.path, req.Method, res.Error)
 		}
-		return res.Result, nil
+		return res.Result, res.View, nil
 	case <-ctx.Done():
 		b.forget(req.ID)
-		return nil, ctx.Err()
+		return nil, "", ctx.Err()
 	}
 }
 

@@ -133,7 +133,7 @@ func TestScoutConcurrent(t *testing.T) {
 			defer wg.Done()
 
 			target := fmt.Sprintf("host-%d", i)
-			raw, err := b.Scout(context.Background(), target, []string{"a", "b"})
+			raw, view, err := b.Scout(context.Background(), target, []string{"a", "b"})
 			if err != nil {
 				errs <- fmt.Errorf("scout %s: %w", target, err)
 				return
@@ -150,6 +150,10 @@ func TestScoutConcurrent(t *testing.T) {
 			// A response routed to the wrong caller shows up right here.
 			if got.Target != target || got.Args != 2 {
 				errs <- fmt.Errorf("scout %s: got %+v", target, got)
+			}
+
+			if view != string(raw) {
+				errs <- fmt.Errorf("scout %s: view %q does not match result %s", target, view, raw)
 			}
 		}()
 	}
@@ -169,12 +173,12 @@ func TestScoutConcurrent(t *testing.T) {
 func TestScoutPanicIsolated(t *testing.T) {
 	b := open(t)
 
-	if _, err := b.Scout(context.Background(), "boom", nil); err == nil {
+	if _, _, err := b.Scout(context.Background(), "boom", nil); err == nil {
 		t.Fatal("expected an error from a panicking Scout")
 	}
 
 	// The module must still be serving after one call blew up.
-	if _, err := b.Scout(context.Background(), "fine", nil); err != nil {
+	if _, _, err := b.Scout(context.Background(), "fine", nil); err != nil {
 		t.Fatalf("module did not survive a panicking Scout: %v", err)
 	}
 }
@@ -182,7 +186,7 @@ func TestScoutPanicIsolated(t *testing.T) {
 func TestScoutErrorIsolated(t *testing.T) {
 	b := open(t)
 
-	_, err := b.Scout(context.Background(), "fail", nil)
+	_, _, err := b.Scout(context.Background(), "fail", nil)
 	if err == nil {
 		t.Fatal("expected an error from a failing Scout")
 	}
@@ -195,7 +199,7 @@ func TestScoutErrorIsolated(t *testing.T) {
 		t.Fatalf("returned error reported as a panic: %v", err)
 	}
 
-	if _, err := b.Scout(context.Background(), "fine", nil); err != nil {
+	if _, _, err := b.Scout(context.Background(), "fine", nil); err != nil {
 		t.Fatalf("module did not survive a failing Scout: %v", err)
 	}
 }
@@ -206,12 +210,12 @@ func TestScoutContextCancel(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
 	defer cancel()
 
-	if _, err := b.Scout(ctx, "slow", nil); err != context.DeadlineExceeded {
+	if _, _, err := b.Scout(ctx, "slow", nil); err != context.DeadlineExceeded {
 		t.Fatalf("got %v, want %v", err, context.DeadlineExceeded)
 	}
 
 	// The abandoned response must not be handed to the next caller.
-	raw, err := b.Scout(context.Background(), "next", nil)
+	raw, view, err := b.Scout(context.Background(), "next", nil)
 	if err != nil {
 		t.Fatalf("Scout after cancel: %v", err)
 	}
@@ -224,6 +228,10 @@ func TestScoutContextCancel(t *testing.T) {
 	if got.Target != "next" {
 		t.Fatalf("got a stale response: %+v", got)
 	}
+	// The view has to travel with the result it was rendered from.
+	if view != string(raw) {
+		t.Fatalf("view %q does not match result %s", view, raw)
+	}
 }
 
 func TestCallAfterClose(t *testing.T) {
@@ -234,7 +242,7 @@ func TestCallAfterClose(t *testing.T) {
 	if err := b.Close(); err != nil {
 		t.Fatalf("Close: %v", err)
 	}
-	if _, err := b.Scout(context.Background(), "x", nil); err != sdk.ErrClosed {
+	if _, _, err := b.Scout(context.Background(), "x", nil); err != sdk.ErrClosed {
 		t.Fatalf("got %v, want %v", err, sdk.ErrClosed)
 	}
 }
