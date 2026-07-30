@@ -28,5 +28,5 @@ type ModuleInfo struct {
 }
 
 func (m *ModuleInfo) IsValid() bool {
-	return m.Name == "" || m.Author == "" || m.Description == ""
+	return m.Name != "" && m.Author != "" && m.Description != ""
 }
