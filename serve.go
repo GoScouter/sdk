@@ -80,7 +80,11 @@ func handle(m Module, req *pipeRequest) (res *pipeResponse) {
 		res.Result = raw
 
 	case methodScout:
-		raw := m.Scout(req.Target, req.Args)
+		raw, err := m.Scout(req.Target, req.Args)
+		if err != nil {
+			res.Error = errMessage(err)
+			return res
+		}
 		if len(raw) == 0 {
 			raw = json.RawMessage("null")
 		}
@@ -95,4 +99,11 @@ func handle(m Module, req *pipeRequest) (res *pipeResponse) {
 	}
 
 	return res
+}
+
+func errMessage(err error) string {
+	if msg := err.Error(); msg != "" {
+		return msg
+	}
+	return "scout failed"
 }

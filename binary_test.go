@@ -32,12 +32,15 @@ func (mod) Info() sdk.ModuleInfo {
 	return sdk.ModuleInfo{Name: "test", Author: "me", Description: "test module"}
 }
 
-func (mod) Scout(target string, args []string) json.RawMessage {
-	if target == "boom" {
+func (mod) Scout(target string, args []string) (json.RawMessage, error) {
+	switch target {
+	case "boom":
 		panic("scout exploded")
+	case "fail":
+		return nil, fmt.Errorf("scout gave up on %s", target)
 	}
 	time.Sleep(200 * time.Millisecond)
-	return json.RawMessage(fmt.Sprintf("{%q:%q,%q:%d}", "target", target, "args", len(args)))
+	return json.RawMessage(fmt.Sprintf("{%q:%q,%q:%d}", "target", target, "args", len(args))), nil
 }
 
 func (mod) Render(raw json.RawMessage) string {
@@ -173,6 +176,27 @@ func TestScoutPanicIsolated(t *testing.T) {
 	// The module must still be serving after one call blew up.
 	if _, err := b.Scout(context.Background(), "fine", nil); err != nil {
 		t.Fatalf("module did not survive a panicking Scout: %v", err)
+	}
+}
+
+func TestScoutErrorIsolated(t *testing.T) {
+	b := open(t)
+
+	_, err := b.Scout(context.Background(), "fail", nil)
+	if err == nil {
+		t.Fatal("expected an error from a failing Scout")
+	}
+	// The module's own message has to survive the trip across the pipe.
+	if !strings.Contains(err.Error(), "scout gave up on fail") {
+		t.Fatalf("error lost the module's message: %v", err)
+	}
+	// A returned error is not a crash, and must not be dressed up as one.
+	if strings.Contains(err.Error(), "panic") {
+		t.Fatalf("returned error reported as a panic: %v", err)
+	}
+
+	if _, err := b.Scout(context.Background(), "fine", nil); err != nil {
+		t.Fatalf("module did not survive a failing Scout: %v", err)
 	}
 }
 

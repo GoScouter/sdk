@@ -2,9 +2,15 @@ package sdk
 
 import "encoding/json"
 
+// Module is what a module binary implements and hands to [Serve].
+//
+// Scout does the work and returns its result as JSON. It reports failure by
+// returning an error, which fails that one call and leaves the module running
+// a module must not exit on a bad target.
+// Render turns a result into text for a human.
 type Module interface {
 	Info() ModuleInfo
-	Scout(target string, args []string) json.RawMessage
+	Scout(target string, args []string) (json.RawMessage, error)
 	Render(raw json.RawMessage) string
 }
 

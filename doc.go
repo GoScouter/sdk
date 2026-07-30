@@ -35,8 +35,20 @@
 //
 // # Failure
 //
-// A Scout that panics is reported to the host as an error on that one call;
-// the module itself stays up. Once the module exits or is closed, calls in
-// flight and calls made afterwards return [ErrClosed]. Errors raised by the
-// module arrive as ordinary errors carrying the module's own message.
+// A Scout reports failure by returning an error, which reaches the host as an
+// ordinary error carrying the module's own message:
+//
+//	func (whois) Scout(target string, args []string) (json.RawMessage, error) {
+//		res, err := lookup(target)
+//		if err != nil {
+//			return nil, fmt.Errorf("whois %s: %w", target, err)
+//		}
+//		...
+//	}
+//
+// Only that one call fails; a Scout that panics is contained the same way.
+// Either way the module stays up and keeps serving, which is why a Scout must
+// never end the process. a log.Fatal on a bad target takes every other call
+// in flight down with it, and every call after it. Once the module does exit or
+// is closed, calls in flight and calls made afterwards return [ErrClosed].
 package sdk
