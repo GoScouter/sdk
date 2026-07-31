@@ -81,7 +81,7 @@ func Open(path string) (*Binary, error) {
 func (b *Binary) Path() string { return b.path }
 
 func (b *Binary) Info(ctx context.Context) (ModuleInfo, error) {
-	raw, _, err := b.call(ctx, &pipeRequest{Method: methodInfo})
+	raw, _, err := b.call(ctx, &pipeRequest{Method: MethodInfo})
 	if err != nil {
 		return ModuleInfo{}, err
 	}
@@ -96,7 +96,7 @@ func (b *Binary) Info(ctx context.Context) (ModuleInfo, error) {
 // answers, ctx is cancelled, or the module exits -- but it does not block other
 // Scout calls, so callers may fan out freely over one Binary.
 func (b *Binary) Scout(ctx context.Context, target string, args []string) (json.RawMessage, string, error) {
-	return b.call(ctx, &pipeRequest{Method: methodScout, Target: target, Args: args})
+	return b.call(ctx, &pipeRequest{Method: MethodScout, Target: target, Args: args})
 }
 
 func (b *Binary) Close() error {

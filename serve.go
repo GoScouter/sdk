@@ -71,7 +71,7 @@ func handle(m Module, req *pipeRequest) (res *pipeResponse) {
 	res = &pipeResponse{ID: req.ID}
 
 	switch req.Method {
-	case methodInfo:
+	case MethodInfo:
 		raw, err := json.Marshal(m.Info())
 		if err != nil {
 			res.Error = fmt.Sprintf("encode info: %v", err)
@@ -80,7 +80,7 @@ func handle(m Module, req *pipeRequest) (res *pipeResponse) {
 		res.Result = raw
 		res.View = ""
 
-	case methodScout:
+	case MethodScout:
 		raw, err := m.Scout(req.Target, req.Args)
 		if err != nil {
 			res.Error = errMessage(err)

@@ -64,7 +64,7 @@ func (c *Client) listen() error {
 	decoder := json.NewDecoder(c.conn)
 
 	for {
-		var resp response
+		var resp Response
 		if err := decoder.Decode(&resp); err != nil {
 			return err
 		}
@@ -114,10 +114,10 @@ func (c *Client) AskModule(namespace ModuleNamespace) (string, error) {
 		return "", err
 	}
 
-	req, err := json.Marshal(request{
+	req, err := json.Marshal(Request{
 		RequestID: key.RequestID,
 		ClientID:  key.ClientID,
-		Type:      methodAsk,
+		Type:      MethodAsk,
 		Data:      askRequest,
 	})
 	if err != nil {

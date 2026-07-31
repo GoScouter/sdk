@@ -3,21 +3,21 @@ package sdk
 import "encoding/json"
 
 const (
-	methodInfo  = "info"
-	methodScout = "scout"
-	methodAsk   = "ask"
+	MethodInfo  = "info"
+	MethodScout = "scout"
+	MethodAsk   = "ask"
 )
 
 type askRequest ModuleNamespace
 
-type request struct {
+type Request struct {
 	Type      string          `json:"type"`
 	ClientID  string          `json:"client_id"`
 	RequestID uint64          `json:"request_id"`
 	Data      json.RawMessage `json:"data"`
 }
 
-type response struct {
+type Response struct {
 	ClientID  string          `json:"client_id"`
 	RequestID uint64          `json:"request_id"`
 	Data      json.RawMessage `json:"data"`
