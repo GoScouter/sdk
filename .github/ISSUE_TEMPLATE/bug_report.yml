@@ -1,0 +1,113 @@
+name: Bug report
+description: Report something in the GoScouter SDK that doesn't work the way it should.
+title: '[Bug]: '
+labels: ['type/bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. This package is the contract between the host
+        and every module, so a precise reproducer is worth a lot here.
+
+        For a **security vulnerability**, don't use this form. Report it
+        privately via
+        [Security Advisories](https://github.com/GoScouter/sdk/security/advisories/new).
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Preflight
+      options:
+        - label: I searched the [existing issues](https://github.com/GoScouter/sdk/issues?q=is%3Aissue) and this hasn't been reported.
+          required: true
+        - label: I'm on the latest [tagged version](https://github.com/GoScouter/sdk/releases), or can reproduce this on `main`.
+          required: true
+        - label: This is a bug in the SDK, not in the `gs` CLI or in a specific module. (For the CLI, file it on [goscouter](https://github.com/GoScouter/goscouter/issues).)
+          required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the bug, and what you expected instead.
+      placeholder: |
+        A Scout that returns an empty json.RawMessage comes back to the host as
+        the literal `null` rather than an error. I expected the module to be
+        told its result was empty.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: |
+        The smallest module or host program that shows the problem, plus the
+        commands you ran. A self-contained Go snippet is ideal.
+      render: go
+      placeholder: |
+        package main
+
+        import (
+            "encoding/json"
+            "log"
+
+            "github.com/GoScouter/sdk"
+        )
+
+        type mod struct{}
+
+        func (mod) Info() sdk.ModuleInfo { ... }
+        func (mod) Scout(target string, args []string) (json.RawMessage, error) { ... }
+        func (mod) Render(raw json.RawMessage) string { ... }
+
+        func main() {
+            if err := sdk.Serve(mod{}); err != nil {
+                log.Fatal(err)
+            }
+        }
+    validations:
+      required: true
+
+  - type: textarea
+    id: output
+    attributes:
+      label: Output
+      description: |
+        The error, panic, or stack trace, and the raw JSON on the pipe if you
+        have it. Please redact hostnames, IPs, and anything you'd rather not
+        publish.
+      render: shell
+    validations:
+      required: false
+
+  - type: input
+    id: sdk-version
+    attributes:
+      label: SDK version
+      description: The version in your `go.mod`, or the commit SHA if you're on `main`.
+      placeholder: v1.0.9
+    validations:
+      required: true
+
+  - type: input
+    id: go-version
+    attributes:
+      label: Go version
+      description: The output of `go version`.
+      placeholder: go1.26.4 linux/amd64
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Linux (x86_64)
+        - Linux (arm64)
+        - macOS (Apple Silicon)
+        - macOS (Intel)
+        - Other
+    validations:
+      required: true

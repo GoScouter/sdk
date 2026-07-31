@@ -1,0 +1,115 @@
+name: Feature request
+description: Suggest an addition or improvement to the GoScouter SDK.
+title: '[Feature]: '
+labels: ['type/feature']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea. Please describe the **problem** before the
+        solution — the API here is small on purpose, and knowing what you're
+        actually up against often points at a smaller change than the one you
+        came in with.
+
+        Keep in mind that every exported identifier and every field on the wire
+        is a promise to module authors we can't easily take back.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Preflight
+      options:
+        - label: I searched the [existing issues](https://github.com/GoScouter/sdk/issues?q=is%3Aissue) and this hasn't been requested.
+          required: true
+        - label: I read the [package documentation](https://pkg.go.dev/github.com/GoScouter/sdk) and this isn't already possible.
+          required: true
+        - label: This belongs in the SDK rather than in an individual module or in the `gs` CLI.
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: What are you building, and where does the SDK get in the way?
+      placeholder: |
+        My module needs to report progress on a long scan. Right now a Scout is
+        a single request and a single response, so the host shows nothing until
+        the whole thing finishes.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: |
+        Sketch the API or the wire change. Go signatures and example JSON are
+        more useful than prose.
+      render: go
+      placeholder: |
+        // An optional interface a module may also implement:
+        type Progressive interface {
+            ScoutProgress(target string, args []string, report func(pct int, msg string)) (json.RawMessage, error)
+        }
+    validations:
+      required: true
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: What does this touch?
+      options:
+        - Module side (Module, Serve)
+        - Host side (Open, Binary)
+        - Runner IPC (Client, AskModule)
+        - Wire protocol / JSON encoding
+        - Documentation
+        - Not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: compatibility
+    attributes:
+      label: Compatibility
+      description: |
+        Both directions have to keep working — a module built against an older
+        SDK running under a newer host, and the reverse.
+      options:
+        - Additive; existing modules and hosts are unaffected
+        - Additive on the wire, but old hosts would ignore the new field
+        - Breaks the Go API
+        - Breaks the wire protocol
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+      description: |
+        Other designs, or ways to do this today without an SDK change (in the
+        module itself, in the host, or through `AskModule`) and why they fell
+        short.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: contribute
+    attributes:
+      label: Would you be willing to implement this?
+      options:
+        - 'Yes, I''d like to open a pull request'
+        - 'Maybe, with some guidance'
+        - 'No, just suggesting it'
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else?
+      description: Prior art, links to how other plugin protocols handle it.
+    validations:
+      required: false

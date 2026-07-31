@@ -1,0 +1,17 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Package documentation
+    url: https://pkg.go.dev/github.com/GoScouter/sdk
+    about: The module protocol, Serve, Open, and the rules a Scout has to follow.
+
+  - name: Question or idea
+    url: https://github.com/GoScouter/sdk/discussions
+    about: Ask how the protocol works, or float a design before it becomes a feature request.
+
+  - name: Issue with the gs CLI
+    url: https://github.com/GoScouter/goscouter/issues/new/choose
+    about: Bugs in the host application itself belong on the goscouter repository.
+
+  - name: Report a security vulnerability
+    url: https://github.com/GoScouter/sdk/security/advisories/new
+    about: Please report vulnerabilities privately, not as a public issue.
