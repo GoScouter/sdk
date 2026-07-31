@@ -117,6 +117,17 @@ func (b *Binary) Close() error {
 	return nil
 }
 
+// Kill stops the module immediately instead of asking it to finish. It is the
+// way out when Close has not returned: Close waits for the subprocess to exit,
+// and a module holding a wedged Scout never does. A Close blocked in another
+// goroutine unblocks once the process is gone.
+func (b *Binary) Kill() error {
+	if b.cmd.Process == nil {
+		return nil
+	}
+	return b.cmd.Process.Kill()
+}
+
 func (b *Binary) call(ctx context.Context, req *pipeRequest) (json.RawMessage, string, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, "", err

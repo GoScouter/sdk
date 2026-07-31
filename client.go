@@ -11,6 +11,10 @@ import (
 	"github.com/google/uuid"
 )
 
+// askTimeout bounds a single AskModule call so a runner that never answers
+// cannot park a Scout indefinitely.
+const askTimeout = 8 * time.Second
+
 type RegistryKey struct {
 	ClientID  string
 	RequestID uint64
@@ -21,7 +25,7 @@ type Client struct {
 
 	conn            net.Conn
 	nextID          uint64
-	pendingRequests map[RegistryKey]chan []byte
+	pendingRequests map[RegistryKey]chan *Response
 
 	mu *sync.Mutex
 }
@@ -37,21 +41,14 @@ func NewClient() (*Client, error) {
 
 		conn:            conn,
 		nextID:          0,
-		pendingRequests: make(map[RegistryKey]chan []byte),
+		pendingRequests: make(map[RegistryKey]chan *Response),
 
 		mu: &sync.Mutex{},
 	}
 
-	errChan := make(chan error)
-	go func() {
-		err = client.listen()
-		errChan <- err
-	}()
-
-	err = <-errChan
-	if err != nil {
-		return nil, err
-	}
+	// listen runs for the life of the connection. Waiting on it here would
+	// block until the socket breaks, which is to say forever.
+	go client.listen()
 
 	return client, nil
 }
@@ -60,13 +57,14 @@ func (c *Client) Close() error {
 	return c.conn.Close()
 }
 
-func (c *Client) listen() error {
+func (c *Client) listen() {
 	decoder := json.NewDecoder(c.conn)
 
 	for {
 		var resp Response
 		if err := decoder.Decode(&resp); err != nil {
-			return err
+			c.fail()
+			return
 		}
 
 		c.mu.Lock()
@@ -81,16 +79,26 @@ func (c *Client) listen() error {
 		c.mu.Unlock()
 
 		if exists {
-			ch <- resp.Data
+			ch <- &resp // buffered, and the only send on this channel
 			close(ch)
 		}
+	}
+}
+
+func (c *Client) fail() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	for key, ch := range c.pendingRequests {
+		delete(c.pendingRequests, key)
+		close(ch)
 	}
 }
 
 func (c *Client) AskModule(namespace ModuleNamespace) (string, error) {
 	c.mu.Lock()
 
-	responseChan := make(chan []byte, 1)
+	responseChan := make(chan *Response, 1)
 	key := RegistryKey{
 		ClientID:  c.id,
 		RequestID: c.nextID,
@@ -132,10 +140,16 @@ func (c *Client) AskModule(namespace ModuleNamespace) (string, error) {
 	}
 
 	select {
-	case rawData := <-responseChan:
-		return string(rawData), nil
+	case resp, ok := <-responseChan:
+		if !ok {
+			return "", fmt.Errorf("sdk: connection to the runner closed while asking %s:%s", namespace.Author, namespace.Name)
+		}
+		if resp.Error != "" {
+			return "", fmt.Errorf("sdk: ask %s:%s: %s", namespace.Author, namespace.Name, resp.Error)
+		}
+		return string(resp.Data), nil
 
-	case <-time.After(8 * time.Second):
+	case <-time.After(askTimeout):
 		return "", fmt.Errorf("request %d for client %s, timed out waiting for module response", key.RequestID, key.ClientID)
 	}
 }
