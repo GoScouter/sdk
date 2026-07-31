@@ -17,7 +17,6 @@ type Module interface {
 type ModuleNamespace struct {
 	Name   string `json:"name"`
 	Author string `json:"author"`
-	Source string `json:"source"`
 }
 
 type ModuleInfo struct {

@@ -8,7 +8,7 @@ const (
 	MethodAsk   = "ask"
 )
 
-type askRequest ModuleNamespace
+type AskRequest ModuleNamespace
 
 type Request struct {
 	Type      string          `json:"type"`
